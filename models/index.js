@@ -10,12 +10,29 @@ const config = require(__dirname + '/../config/config.json')[env];
 const db = {};
 
 let sequelize;
-if (config.use_env_variable) {
+
+// ១. កែសម្រួលការបង្កើត Connection (Logic ថ្មីសម្រាប់ Vercel/Neon)
+if (process.env.DATABASE_URL) {
+  // ប្រសិនបើមាន DATABASE_URL (នៅលើ Vercel) ប្រើវាភ្លាមជាមួយ SSL
+  sequelize = new Sequelize(process.env.DATABASE_URL, {
+    dialect: 'postgres',
+    protocol: 'postgres',
+    dialectOptions: {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false // សំខាន់ណាស់សម្រាប់ Neon Postgres
+      }
+    },
+    logging: false // បិទការបង្ហាញ Query ក្នុង Logs ដើម្បីឱ្យស្អាត
+  });
+} else if (config.use_env_variable) {
   sequelize = new Sequelize(process.env[config.use_env_variable], config);
 } else {
+  // ប្រើការកំណត់ក្នុង config.json ធម្មតា (សម្រាប់ Localhost)
   sequelize = new Sequelize(config.database, config.username, config.password, config);
 }
 
+// ២. ការទាញយក Model (រក្សាទុកកូដដើមរបស់អ្នក)
 fs
   .readdirSync(__dirname)
   .filter(file => {
