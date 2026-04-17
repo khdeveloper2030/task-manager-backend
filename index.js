@@ -6,7 +6,7 @@ const app = express();
 
 // ១. ការកំណត់ CORS - អនុញ្ញាតឱ្យ Frontend ហៅចូល
 app.use(cors({
-  origin: ["https://task-manager-frontend-tau-two.vercel.app/"], // ប្តូរ URL នេះឱ្យត្រូវនឹង Frontend របស់អ្នក
+  origin: ["https://task-manager-frontend-tau-two.vercel.app"], // ប្តូរ URL នេះឱ្យត្រូវនឹង Frontend របស់អ្នក
   methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true
 }));
