@@ -1,17 +1,19 @@
 const express = require('express');
-const cors = require('cors'); // ១. Import CORS
+const cors = require('cors');
 const db = require('./models');
 
 const app = express();
 
-// ២. កំណត់ការអនុញ្ញាត (Configuration)
+// ១. កំណត់ការអនុញ្ញាត CORS (ប្តូរទៅ URL របស់ Frontend របស់អ្នក)
 app.use(cors({
-  origin: ["https://taskly-api.vercel.app"], // ដាក់ URL របស់ Frontend ដែល Vercel ឱ្យមក
+  origin: ["https://task-manager-frontend.vercel.app"], // ត្រូវដាក់ URL របស់ Frontend
   methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true
 }));
 
 app.use(express.json());
+
+// --- API Routes ---
 
 // ១. ទាញយក Task ទាំងអស់
 app.get('/api/tasks', async (req, res) => {
@@ -42,7 +44,7 @@ app.put('/api/tasks/:id', async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ៤. លុប Task (DELETE) - ត្រូវប្រាកដថាប្រើ req.params.id
+// ៤. លុប Task (DELETE)
 app.delete('/api/tasks/:id', async (req, res) => {
     try {
         const taskId = req.params.id;
@@ -55,6 +57,15 @@ app.delete('/api/tasks/:id', async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-db.sequelize.sync().then(() => {
-    app.listen(5000, () => console.log("🚀 Server running on http://localhost:5000"));
-});
+// --- ការរៀបចំសម្រាប់ Deployment ---
+
+// សម្រាប់ Vercel Serverless (ដាច់ខាតត្រូវតែមាន)
+module.exports = app;
+
+// ដំណើរការ Server តែក្នុង Local Development ប៉ុណ្ណោះ
+if (process.env.NODE_ENV !== 'production') {
+    const PORT = process.env.PORT || 5000;
+    db.sequelize.sync().then(() => {
+        app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
+    });
+}
