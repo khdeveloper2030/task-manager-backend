@@ -8,7 +8,8 @@ module.exports = (sequelize, DataTypes) => {
     priority: { type: DataTypes.STRING, defaultValue: 'medium' },
     status: { type: DataTypes.STRING, defaultValue: 'todo' },
     startDate: { type: DataTypes.DATE, allowNull: true },
-    endDate: { type: DataTypes.DATE, allowNull: true }
+    endDate: { type: DataTypes.DATE, allowNull: true },
+    userEmail: { type: DataTypes.STRING, allowNull: false }
   });
   return Task;
 };

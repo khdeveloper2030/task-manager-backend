@@ -4,9 +4,9 @@ const db = require('./models');
 
 const app = express();
 
-// ១. ការកំណត់ CORS ឱ្យបានរឹងមាំ (ដោះស្រាយបញ្ហា Error 400 Pre-flight)
+// ១. ការកំណត់ CORS ឱ្យបានរឹងមាំ
 app.use(cors({
-  origin: "https://task-manager-frontend-tau-two.vercel.app", // កុំដាក់ [] និង / នៅខាងចុង
+  origin: "https://task-manager-frontend-tau-two.vercel.app", 
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true
@@ -14,35 +14,44 @@ app.use(cors({
 
 app.use(express.json());
 
-// ២. Route ស្វាគមន៍សម្រាប់តេស្តលើ Browser
+// ២. Route ស្វាគមន៍
 app.get('/', (req, res) => {
-    res.send('🚀 Task Manager API is running successfully!');
+    res.send('🚀 Taskly API with User Auth is running successfully!');
 });
 
 // ៣. API Routes
 
-// --- ទាញយក Task ទាំងអស់ ---
+// --- ទាញយក Task (បែងចែកតាម Email របស់ User) ---
 app.get('/api/tasks', async (req, res) => {
     try {
-        const tasks = await db.Task.findAll({ order: [['createdAt', 'DESC']] });
+        const { email } = req.query; // ទទួល Email ពី Frontend តាមរយៈ query string (?email=...)
+        
+        if (!email) {
+            return res.status(400).json({ error: "Email is required to fetch tasks." });
+        }
+
+        const tasks = await db.Task.findAll({ 
+            where: { userEmail: email }, // ទាញយកតែ Task របស់ម្ចាស់ Email នេះ
+            order: [['createdAt', 'DESC']] 
+        });
         res.json(tasks);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
-// --- បង្កើត Task ថ្មី ---
+// --- បង្កើត Task ថ្មី (ភ្ជាប់ជាមួយ Email) ---
 app.post('/api/tasks', async (req, res) => {
     try {
+        // Frontend នឹងផ្ញើ req.body រួមមាន { title, ..., userEmail }
         const newTask = await db.Task.create(req.body);
         res.status(201).json(newTask);
     } catch (err) {
-        // បើ Error 400 កើតឡើងនៅទីនេះ មានន័យថាទិន្នន័យផ្ញើមកខុសទម្រង់ Database
         res.status(400).json({ error: err.message });
     }
 });
 
-// --- កែប្រែ Task (សំខាន់៖ លោកអ្នកត្រូវការ Route នេះដើម្បីឱ្យប៊ូតុង Edit ដើរ) ---
+// --- កែប្រែ Task ---
 app.put('/api/tasks/:id', async (req, res) => {
     try {
         const { id } = req.params;
@@ -73,15 +82,15 @@ app.delete('/api/tasks/:id', async (req, res) => {
     }
 });
 
-// ៤. ការ Sync Database (ប្រើ alter: true ដើម្បីឱ្យវា Update Column ស្វ័យប្រវត្តិ)
+// ៤. ការ Sync Database (ប្រើ alter: true ដើម្បីឱ្យវាថែម Column userEmail ស្វ័យប្រវត្តិ)
 db.sequelize.sync({ alter: true })
-    .then(() => console.log("✅ Database & Tables Synced!"))
+    .then(() => console.log("✅ Database Synced with User Auth Support!"))
     .catch(err => console.error("❌ Sync Error: ", err));
 
 // ៥. Export សម្រាប់ Vercel
 module.exports = app;
 
-// ៦. សម្រាប់ដំណើរការលើ Localhost (Development)
+// ៦. សម្រាប់ Development (Localhost)
 if (process.env.NODE_ENV !== 'production') {
     const PORT = process.env.PORT || 5000;
     app.listen(PORT, () => {
