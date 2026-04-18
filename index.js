@@ -4,7 +4,7 @@ const db = require('./models');
 
 const app = express();
 
-// ១. ការកំណត់ CORS ឱ្យបានរឹងមាំ
+// ១. ការកំណត់ CORS (ត្រឹមត្រូវ)
 app.use(cors({
   origin: "https://task-manager-frontend-tau-two.vercel.app", 
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -21,17 +21,15 @@ app.get('/', (req, res) => {
 
 // ៣. API Routes
 
-// --- ទាញយក Task (បែងចែកតាម Email របស់ User) ---
+// --- ទាញយក Task (បែងចែកតាម Email) ---
 app.get('/api/tasks', async (req, res) => {
     try {
-        const { email } = req.query; // ទទួល Email ពី Frontend តាមរយៈ query string (?email=...)
-        
+        const { email } = req.query; 
         if (!email) {
             return res.status(400).json({ error: "Email is required to fetch tasks." });
         }
-
         const tasks = await db.Task.findAll({ 
-            where: { userEmail: email }, // ទាញយកតែ Task របស់ម្ចាស់ Email នេះ
+            where: { userEmail: email }, 
             order: [['createdAt', 'DESC']] 
         });
         res.json(tasks);
@@ -40,13 +38,14 @@ app.get('/api/tasks', async (req, res) => {
     }
 });
 
-// --- បង្កើត Task ថ្មី (ភ្ជាប់ជាមួយ Email) ---
+// --- បង្កើត Task ថ្មី ---
 app.post('/api/tasks', async (req, res) => {
     try {
-        // Frontend នឹងផ្ញើ req.body រួមមាន { title, ..., userEmail }
+        console.log("Receiving data:", req.body); // បន្ថែមដើម្បីតេស្តមើលក្នុង Vercel Logs
         const newTask = await db.Task.create(req.body);
         res.status(201).json(newTask);
     } catch (err) {
+        console.error("Create Error:", err.message);
         res.status(400).json({ error: err.message });
     }
 });
@@ -82,15 +81,13 @@ app.delete('/api/tasks/:id', async (req, res) => {
     }
 });
 
-// ៤. ការ Sync Database (ប្រើ alter: true ដើម្បីឱ្យវាថែម Column userEmail ស្វ័យប្រវត្តិ)
+// ៤. Sync Database
 db.sequelize.sync({ alter: true })
     .then(() => console.log("✅ Database Synced with User Auth Support!"))
     .catch(err => console.error("❌ Sync Error: ", err));
 
-// ៥. Export សម្រាប់ Vercel
 module.exports = app;
 
-// ៦. សម្រាប់ Development (Localhost)
 if (process.env.NODE_ENV !== 'production') {
     const PORT = process.env.PORT || 5000;
     app.listen(PORT, () => {
